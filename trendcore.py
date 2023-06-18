@@ -96,11 +96,11 @@ class TrendCore():
         if minutes >= 1440:
             return '🌕'  # Full Moon
         elif minutes >= 240:
-            return '🌖'  # Waxing Gibbous Moon
+            return '🌔'  # Waxing Gibbous Moon
         elif minutes >= 60:
             return '🌓'  # First Quarter Moon
         elif minutes >= 15:
-            return '🌔'  # Waning Gibbous Moon
+            return '🌒'  # Waxing Crescent Moon
         else:
             return '🌑'  # New Moon
 
