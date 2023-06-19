@@ -72,10 +72,11 @@ class TrendCore():
         for index, row in slice.iterrows():
             columns = [f"{row['Infographic']}",
                        f"{index}",
-                       f"${row['Price']}",
-                       f"{'<b>' if row['Amount'] > 500000 else ''}{row['USD per level']}{'</b>' if row['Amount'] > 500000 else ''}",
-                       f"{' ' if row['To level %'] > 0 else ''}{row['To level %']:.2f}%",
-                       f"{row['Wall type icon']}"
+                       f"${utils.escape_md(row['Price'])}",
+                       f"{row['USD per level']}",
+                       f"{row['To level %']:.2f}%",
+                       f"{row['Wall type icon']}",
+                       f"{row['Estimate time to corrode (mins)']}'"
                        ]
             rows.append(columns)
         return utils.format_telegram_message(rows)
@@ -181,7 +182,7 @@ class TrendCore():
         # remove the '% left' and cast it to float.
         df['Amount left %'] = df['Amount left %'].str.replace('[^\.|\d]', '', regex=True)
         # remove the parenthesis from the 'USD per level' column
-        df['USD per level'] = df['USD per level'].str.replace('\s\(.*?\)', '', regex=True)
+        df['USD per level'] = df['USD per level'].str.replace('\s\(.*?\)', '', regex=True).str.strip()
         # create new column to convert to numeric value. Replace K to 1000 and M to 1000000
         df['Amount'] = df['USD per level'].apply(utils.convert_units).astype(float)
         # format 'To level %' column as float. This is the distance from the current price to the level
