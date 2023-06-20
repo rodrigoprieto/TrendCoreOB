@@ -33,7 +33,7 @@ async def data(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     tc_webscrapper = trendcore.TrendCore()
     formatted_data = tc_webscrapper.get_formatted_data(250000, 5.0)
 
-    await update.message.reply_text(formatted_data, parse_mode="MarkdownV2")
+    await update.message.reply_text(formatted_data, parse_mode="Markdown")
 
 
 app = ApplicationBuilder().token(config.telegram_token).build()

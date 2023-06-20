@@ -72,7 +72,7 @@ class TrendCore():
         for index, row in slice.iterrows():
             columns = [f"{row['Infographic']}",
                        f"{index}",
-                       f"${utils.escape_md(row['Price'])}",
+                       f"${row['Price']}",
                        f"{row['USD per level']}",
                        f"{row['To level %']:.2f}%",
                        f"{row['Wall type icon']}",
