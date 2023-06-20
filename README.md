@@ -6,9 +6,8 @@ This repository contains a Python application that retrieves and parses Order Bo
 
 - Retrieves Order Book information from [TrendCore](https://trendcore.ru/)
 - Parses the data into a Pandas DataFrame, calculating the time for each bid and ask wall.
-- 
-- Sets up a Telegram bot for retrieving the Order Book information.
-- Outputs the parsed data to the Telegram bot on command.
+- Sets up a [Telegram bot](https://t.me/obtracker_bot) for retrieving the Order Book information.
+- Outputs the parsed data to the Telegram bot using the /data command.
 
 ## Installation
 
