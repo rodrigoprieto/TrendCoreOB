@@ -16,3 +16,5 @@ trendcore_csv = join(data_path, 'trendcore.csv')
 telegram_token = ""  # Update your token
 telegram_bot = ""  # Optional
 
+# User data
+user_data = join(data_path, 'users_data.db')

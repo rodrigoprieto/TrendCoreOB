@@ -8,6 +8,10 @@ This repository contains a Python application that retrieves and parses Order Bo
 - Parses the data into a Pandas DataFrame, calculating the time for each bid and ask wall.
 - Sets up a [Telegram bot](https://t.me/obtracker_bot) for retrieving the Order Book information.
 - Outputs the parsed data to the Telegram bot using the /data command.
+- You can also configure the bot as per your needs by using the /wallsize and /distance commands.
+- Type /help to get more information about how the bot works.
+
+Have fun, and see you there 👉 [Link to Telegram bot](https://t.me/obtracker_bot)
 
 ## Installation
 

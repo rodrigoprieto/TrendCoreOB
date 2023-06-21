@@ -79,6 +79,8 @@ class TrendCore():
                        f"{row['Estimate time to corrode (mins)']}'"
                        ]
             rows.append(columns)
+        if len(rows) == 0:
+            return f"There are no coins with the current filters:\nWallsize: {min_wall_size}, Distance: {max_distance_to_level}%"
         return utils.format_telegram_message(rows)
 
     def icon_from_elapsed_time(self, minutes):
