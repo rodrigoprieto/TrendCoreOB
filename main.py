@@ -40,23 +40,27 @@ async def wallsize(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """
     # the command should be in the format "/wallsize 100k"
     # we split the text by space and take the second element
-
     try:
         user = update.message.from_user
         db_user = db.get_user(user.id)
         if db_user is None:
             db.insert_user(user)
 
-        wall_size = update.message.text.split()[1]
-        wall_size = wall_size.upper()
-        if 'K' in wall_size or 'M' in wall_size:
-            # convert 100k to 100000
-            wall_size = utils.convert_units(wall_size)
+        if len(update.message.text.split()) == 1:
+            # The user typed /wallsize without any number. We retrieve the current value
+            await update.message.reply_text(f"The current wall size value is {float(db_user['wallsize']):.0f}.\nTo update it"
+                                            " please type /wallsize [number]. \nExample: /wallsize 250k")
         else:
-            wall_size = float(wall_size)
+            wall_size = update.message.text.split()[1]
+            wall_size = wall_size.upper()
+            if 'K' in wall_size or 'M' in wall_size:
+                # convert 100k to 100000
+                wall_size = utils.convert_units(wall_size)
+            else:
+                wall_size = float(wall_size)
 
-        db.update_wallsize(user, wall_size)
-        await update.message.reply_text(f"Minimal wall size updated to {wall_size} USD")
+            db.update_wallsize(user, wall_size)
+            await update.message.reply_text(f"Minimal wall size updated to {wall_size:.0f} USD")
     except error.TelegramError as e:
         print(f"Telegram Error occurred: {e.message}")
     except Exception as e:
@@ -74,20 +78,22 @@ async def distance(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """
     # the command should be in the format "/distance [number]"
     # we split the text by space and take the second element
-
-
     try:
         user = update.message.from_user
         db_user = db.get_user(user.id)
         if db_user is None:
             db.insert_user(user)
+        if len(update.message.text.split()) == 1:
+            # The user typed /wallsize without any number. We retrieve the current value
+            await update.message.reply_text(f"The current distance value is {float(db_user['distance']):.2f}.\nTo update it"
+                                            " please type /distance [number]. \nExample: /distance 5")
+        else:
+            distance = update.message.text.split()[1]
+            distance = distance.replace('%','').strip()
+            distance = float(distance)
 
-        distance = update.message.text.split()[1]
-        distance = distance.replace('%','').strip()
-        distance = float(distance)
-
-        db.update_distance(user, distance)
-        await update.message.reply_text(f"Maximum distance updated to {distance:.2f}%")
+            db.update_distance(user, distance)
+            await update.message.reply_text(f"Maximum distance updated to {distance:.2f}%")
     except error.TelegramError as e:
         print(f"Telegram Error occurred: {e.message}")
     except Exception as e:
@@ -140,6 +146,14 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def data(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """
+    Retrieves the data from Trendcore website, process it and returns
+    the wall size information to the user depending on the wallsize and
+    distance configured in the user's settings.
+    :param update:
+    :param context:
+    :return:
+    """
     try:
 
         user = update.message.from_user
@@ -158,11 +172,6 @@ async def data(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     except error.TelegramError as e:
         print(f"Telegram Error occurred: {e.message}")
 
-async def register_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    user = update.message.from_user
-    db_user = db.get_user(user.id)
-    if db_user is None:
-        db.insert_user(user)
 
 app = ApplicationBuilder().token(config.telegram_token).build()
 # Start commands & help
