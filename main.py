@@ -60,9 +60,9 @@ async def wallsize(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     except error.TelegramError as e:
         print(f"Telegram Error occurred: {e.message}")
     except Exception as e:
-        await update.message.reply_text("There was a problem updating the minimum wall size. "
-                                        "Usage: */wallsize amount*\nExample: */wallsize 100k* or"
-                                        "/wallsize 1M")
+        await update.message.reply_text("There was a problem updating the minimum wall size.\n"
+                                        "Usage: */wallsize [amount]*\n"
+                                        "Example: */wallsize 100k*", parse_mode="Markdown")
 
 
 async def distance(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -92,9 +92,9 @@ async def distance(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         print(f"Telegram Error occurred: {e.message}")
     except Exception as e:
         print(e)
-        await update.message.reply_text("There was a problem updating the distance. "
-                                        "Usage: */distance number*\n"
-                                        "Example: */distance 5*")
+        await update.message.reply_text("There was a problem updating the distance.\n"
+                                        "Usage: */distance [number]*\n"
+                                        "Example: */distance 5*", parse_mode="Markdown")
 
 
 async def help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
