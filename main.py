@@ -49,7 +49,7 @@ async def wallsize(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if len(update.message.text.split()) == 1:
             # The user typed /wallsize without any number. We retrieve the current value
             await update.message.reply_text(f"The current wall size value is {float(db_user['wallsize']):.0f}.\nTo update it"
-                                            " please type /wallsize [number]. \nExample: /wallsize 250k")
+                                            " please type: */wallsize [amount]*.\nExample: */wallsize 100k*", parse_mode="Markdown")
         else:
             wall_size = update.message.text.split()[1]
             wall_size = wall_size.upper()
@@ -86,7 +86,7 @@ async def distance(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if len(update.message.text.split()) == 1:
             # The user typed /wallsize without any number. We retrieve the current value
             await update.message.reply_text(f"The current distance value is {float(db_user['distance']):.2f}.\nTo update it"
-                                            " please type /distance [number]. \nExample: /distance 5")
+                                            " please type */distance [number]*.\nExample: */distance 5*", parse_mode="Markdown")
         else:
             distance = update.message.text.split()[1]
             distance = distance.replace('%','').strip()
