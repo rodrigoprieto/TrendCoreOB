@@ -1,13 +1,12 @@
-import asyncio
-
-import telegram.ext.filters
+from millify import millify
 from telegram import Update, error
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler
+import telegram.ext.filters
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 import config
 import trendcore
 import utils
-import pandas as pd
 from UserDatabase import UserDatabase
+import orderbook
 
 # Initiate the Database where we're going to persist user's settings
 db = UserDatabase(config.user_data)
@@ -25,7 +24,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         db_user = db.get_user(user.id)
         if db_user is None:
             db.insert_user(user)
-        await update.message.reply_text('Hi! Use /data to get the Order Book information '
+        await update.message.reply_text('Hi! Use /tc to get the TrendCore Order Book information, /btc to get'
+                                        ' Bitcoin Order Book '
                                         'or /help to get more information.')
     except error.TelegramError as e:
         print(f"Telegram Error occurred: {e.message}")
@@ -60,7 +60,8 @@ async def wallsize(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 wall_size = float(wall_size)
 
             db.update_wallsize(user, wall_size)
-            await update.message.reply_text(f"Minimal wall size updated to {wall_size:.0f} USD")
+            await update.message.reply_text(f"Wall size updated successfully.\n"
+                                            f"You will receive OB walls that are at least {millify(wall_size,1)} USD.")
     except error.TelegramError as e:
         print(f"Telegram Error occurred: {e.message}")
     except Exception as e:
@@ -93,7 +94,8 @@ async def distance(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             distance = float(distance)
 
             db.update_distance(user, distance)
-            await update.message.reply_text(f"Maximum distance updated to {distance:.2f}%")
+            await update.message.reply_text(f"Maximum distance updated successfully.\n"
+                                            f"You will receive OB walls that are less or equal to {distance:.2f}%.")
     except error.TelegramError as e:
         print(f"Telegram Error occurred: {e.message}")
     except Exception as e:
@@ -106,7 +108,7 @@ async def distance(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     try:
         await update.message.reply_text('Welcome to the TrendCore OrderBook Bot, a handy tool for accessing cryptocurrency '
-                                        'order wall information from the TrendCore website with the /data command.\n\n'
+                                        'order wall information from the TrendCore website with the /tc command.\n\n'
                                         '*Understanding the Symbols*:\n\n'
                                         'The moon icons denote the age of the wall:\n\n'
                                         '🌑 Wall is less than 15 minutes old.\n'
@@ -122,7 +124,7 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                                         '- The distance (%) from the current price to the wall.\n'
                                         '- An estimated time (in minutes) it may take for the price '
                                         'to erode (go through) the wall.\n\n'
-                                        'Feel free to use /data anytime to get the most recent order wall '
+                                        'Feel free to use /tc anytime to get the most recent order wall '
                                         'information.\n', parse_mode="Markdown")
         await update.message.reply_text('*Configuration Commands*:\n\n'
                                         '1. *Minimum Wall Size*:\n'
@@ -138,7 +140,7 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                                         'Walls farther than this distance will not be displayed.\n'
                                         'Usage Example:\n'
                                         '- /distance 5 : Sets the maximum allowed distance to 5%.\n\n'
-                                        'Remember, to retrieve the order book data, use the /data command.\n\n'
+                                        'Remember, to retrieve the order book data, use the /tc command.\n\n'
                                         'Happy trading!'
                                         , parse_mode="Markdown")
     except error.TelegramError as e:
@@ -173,12 +175,33 @@ async def data(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         print(f"Telegram Error occurred: {e.message}")
 
 
+async def btc_orderbook(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    try:
+        # Send "typing" action while we retrieve the OB data
+        await context.bot.send_chat_action(chat_id=update.effective_message.chat_id,
+                                           action=telegram.constants.ChatAction.TYPING)
+        # Retrieve the OB data
+        ob = orderbook.OrderBook()
+
+        # Send to the user
+        await update.message.reply_photo(ob.order_book_image, ob.get_caption())
+
+    except error.TelegramError as e:
+        print(f"Telegram Error occurred: {e.message}")
+    except Exception as e:
+        await update.message.reply_text(f"Error retrieving OB data: {e.message}.\nPlease try again later.",
+                                        parse_mode="Markdown")
+
+
 app = ApplicationBuilder().token(config.telegram_token).build()
 # Start commands & help
 app.add_handler(CommandHandler("start", start))
 app.add_handler(CommandHandler("help", help))
 # Data commands
-app.add_handler(CommandHandler("data", data))
+app.add_handler(CommandHandler("tc", data))
+app.add_handler(CommandHandler("data", data))  # For compatibility in prev. versions
+# Order Book
+app.add_handler(CommandHandler("btc", btc_orderbook))
 # Configuration
 app.add_handler(CommandHandler("wallsize", wallsize))
 app.add_handler(CommandHandler("distance", distance))
