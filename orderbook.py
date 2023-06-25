@@ -120,8 +120,8 @@ class OrderBook():
             plt.annotate(annotation_text, xy=(row['Price'], row['Sell']), xytext=(-20, 15),
                          textcoords='offset points', arrowprops=dict(arrowstyle="->", color='orange'))
 
-        plt.ylabel('Price')
-        plt.xlabel('Cumulative Size')
+        plt.xlabel('Price')
+        plt.ylabel('Cumulative Size')
         plt.legend(loc='lower right')
 
         # Add text to display current price and buy/sell analysis within the price range
