@@ -160,7 +160,9 @@ async def data(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
         user = update.message.from_user
         db_user = db.get_user(user.id)
-
+        if db_user is None:
+            db.insert_user(user)
+            db_user = db.get_user(user.id)
         wallsize = float(db_user['wallsize'])
         distance = float(db_user['distance'])
 
@@ -180,8 +182,17 @@ async def btc_orderbook(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         # Send "typing" action while we retrieve the OB data
         await context.bot.send_chat_action(chat_id=update.effective_message.chat_id,
                                            action=telegram.constants.ChatAction.TYPING)
+
+        user = update.message.from_user
+        db_user = db.get_user(user.id)
+        if db_user is None:
+            db.insert_user(user)
+            db_user = db.get_user(user.id)
+        # Get the wallsize configured for this user
+        wallsize = float(db_user['wallsize'])
+
         # Retrieve the OB data
-        ob = orderbook.OrderBook()
+        ob = orderbook.OrderBook(wallsize)
 
         # Send to the user
         await update.message.reply_photo(ob.order_book_image, ob.get_caption())

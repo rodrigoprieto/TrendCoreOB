@@ -161,7 +161,7 @@ class OrderBook():
         time_difference = datetime.datetime.utcnow() - dt
         seconds_difference = time_difference.total_seconds()
         time_ago = f"{int(seconds_difference)} second{'s' if int(seconds_difference) > 1 else ''} ago"
-        message = f"BTC-USDT from Binance, OKEx, Bybit.\n"\
+        message = f"BTC-USDT from Binance, OKX, ByBit.\n"\
                   f"Updated on {formatted} ({time_ago})"
         return message
 
