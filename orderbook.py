@@ -1,6 +1,6 @@
 import datetime
-
 import pandas as pd
+from millify import millify
 import config
 import time
 import os
@@ -9,6 +9,7 @@ from bybit_orderbook import Bybit
 from okex_orderbook import OKEx
 from binance_orderbook import Binance
 import matplotlib.pyplot as plt
+from scipy.signal import find_peaks
 
 class OrderBook():
     """
@@ -29,10 +30,11 @@ class OrderBook():
     # updated time
     updated_time = datetime.datetime.utcnow().timestamp()
 
-    def __init__(self):
+    def __init__(self, min_wallsize = 100000):
         # get the proper filename
         self.csv = config.order_book_data
         self.order_book_image = config.order_book_image
+        self.wallsize = min_wallsize
         self.refresh_order_book()
 
     def refresh_order_book(self):
@@ -64,6 +66,13 @@ class OrderBook():
         else:
             orderbook = pd.read_csv(self.csv)
 
+        # Get the current BTC price from binance
+        response = requests.get('https://api.binance.com/api/v3/ticker/price', params={'symbol': 'BTCUSDT'})
+        current_price = float(response.json()['price'])
+
+        # Optional: remove the bids greater than current_price
+        # Optional: remove the asks lower than current price
+
         # Calculate cumulative sums for buy and sell sides
         """
         In this modified code, after sorting the dataframe by price in ascending order, we calculate the cumulative bids as before. However, for the cumulative asks, we reverse the order of the 'Size' column for asks using [::-1], calculate the cumulative sum with cumsum(), and then reverse the order again to get the correct accumulation from the minimum to the maximum price.
@@ -71,21 +80,45 @@ class OrderBook():
         """
         orderbook['Buy'] = orderbook[orderbook['Side'] == 'buy']['Size'].cumsum()
         orderbook['Sell'] = orderbook[orderbook['Side'] == 'sell']['Size'][::-1].cumsum()[::-1]
+        orderbook['SizeUSD'] = orderbook['Size'] * orderbook['Price']
 
-        # Get the current BTC price from binance
-        response = requests.get('https://api.binance.com/api/v3/ticker/price', params={'symbol': 'BTCUSDT'})
-        current_price = float(response.json()['price'])
+        # Separate buy and sell data
+        bids = orderbook[(orderbook['Side'] == 'buy')]
+        asks = orderbook[(orderbook['Side'] == 'sell')]
+        # Find peaks (buy walls) based on size value in USD
+        bids_peaks, _ = find_peaks(bids['SizeUSD'].values, prominence=self.wallsize)
+        # Sort the buy peaks by size in descending order
+        sorted_bids_peaks = bids.iloc[bids_peaks].sort_values('SizeUSD', ascending=False)
+        # Find peaks (sell walls) based on size value in USD
+        asks_peaks, _ = find_peaks(asks['SizeUSD'].values, prominence=self.wallsize)
+        # Sort the sell peaks by size in descending order
+        sorted_asks_peaks = asks.iloc[asks_peaks].sort_values('SizeUSD', ascending=False)
 
-        buy_size = orderbook[(orderbook['Side'] == 'buy')]['Size'].sum()
-        sell_size = orderbook[(orderbook['Side'] == 'sell')]['Size'].sum()
+        # Sum the total Buy and Sell size
+        buy_size = bids['Size'].sum()
+        sell_size = asks['Size'].sum()
+        # Calculate the Bid-Ask ratio
         bid_ask_ratio = buy_size / sell_size
 
         # Start plotting
         plt.figure(figsize=(8, 6))  # Width: 8 inches, Height: 6 inches
+        plt.style.use('dark_background')
         plt.title("Aggregated Orderbook BTC/USD")
         # Plot the updated cumulative sums for buy and sell sides
         plt.plot(orderbook['Price'], orderbook['Buy'], label='Buy', color='g')
         plt.plot(orderbook['Price'], orderbook['Sell'], label='Sell', color='r')
+
+        # Add annotations for the most prominent buy walls
+        for index, row in sorted_bids_peaks.head(3).iterrows():
+            annotation_text = f"{millify(row['SizeUSD'],1)} USD @ {row['Price']:.0f}"
+            plt.annotate(annotation_text, xy=(row['Price'], row['Buy']), xytext=(-20, -15),
+                         textcoords='offset points', arrowprops=dict(arrowstyle="->", color='yellow'))
+
+        # Add annotations for the most prominent sell walls
+        for index, row in sorted_asks_peaks.head(3).iterrows():
+            annotation_text = f"{millify(row['SizeUSD'],1)} USD @ {row['Price']:.0f}"
+            plt.annotate(annotation_text, xy=(row['Price'], row['Sell']), xytext=(-20, 15),
+                         textcoords='offset points', arrowprops=dict(arrowstyle="->", color='orange'))
 
         plt.ylabel('Price')
         plt.xlabel('Cumulative Size')
@@ -131,3 +164,9 @@ class OrderBook():
         message = f"BTC-USDT from Binance, OKEx, Bybit.\n"\
                   f"Updated on {formatted} ({time_ago})"
         return message
+
+
+if __name__ == '__main__':
+    print('__main__')
+    ob = OrderBook(200000)
+

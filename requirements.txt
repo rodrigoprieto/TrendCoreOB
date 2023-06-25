@@ -4,3 +4,4 @@ pandas
 python-telegram-bot
 millify
 matplotlib
+scipy
