@@ -9,6 +9,7 @@ from bybit_orderbook import Bybit
 from okex_orderbook import OKEx
 from binance_orderbook import Binance
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 from scipy.signal import find_peaks
 
 class OrderBook():
@@ -78,9 +79,9 @@ class OrderBook():
         In this modified code, after sorting the dataframe by price in ascending order, we calculate the cumulative bids as before. However, for the cumulative asks, we reverse the order of the 'Size' column for asks using [::-1], calculate the cumulative sum with cumsum(), and then reverse the order again to get the correct accumulation from the minimum to the maximum price.
         By reversing the asks' 'Size' column, the cumulative sum is calculated starting from the maximum price. Then, reversing it back ensures that the cumulative asks are plotted correctly against the price.
         """
-        orderbook['Buy'] = orderbook[orderbook['Side'] == 'buy']['Size'].cumsum()
-        orderbook['Sell'] = orderbook[orderbook['Side'] == 'sell']['Size'][::-1].cumsum()[::-1]
         orderbook['SizeUSD'] = orderbook['Size'] * orderbook['Price']
+        orderbook['Buy'] = orderbook[orderbook['Side'] == 'buy']['SizeUSD'].cumsum()
+        orderbook['Sell'] = orderbook[orderbook['Side'] == 'sell']['SizeUSD'][::-1].cumsum()[::-1]
 
         # Separate buy and sell data
         bids = orderbook[(orderbook['Side'] == 'buy')]
@@ -95,8 +96,8 @@ class OrderBook():
         sorted_asks_peaks = asks.iloc[asks_peaks].sort_values('SizeUSD', ascending=False)
 
         # Sum the total Buy and Sell size
-        buy_size = bids['Size'].sum()
-        sell_size = asks['Size'].sum()
+        buy_size = bids['SizeUSD'].sum()
+        sell_size = asks['SizeUSD'].sum()
         # Calculate the Bid-Ask ratio
         bid_ask_ratio = buy_size / sell_size
 
@@ -122,12 +123,16 @@ class OrderBook():
 
         plt.xlabel('Price')
         plt.ylabel('Cumulative Size')
+        # Define custom formatter function to display y-axis values in millions
+        formatter = ticker.FuncFormatter(lambda x, pos: f'{x / 1e6:.0f}M')
+        plt.gca().yaxis.set_major_formatter(formatter)
+
         plt.legend(loc='lower right')
 
         # Add text to display current price and buy/sell analysis within the price range
         plt.text(0.03, 0.03, f'Current Price: {current_price:.0f}', transform=plt.gca().transAxes, ha='left')
-        plt.text(0.03, 0.08, f'Buy Size: {buy_size:.2f}', transform=plt.gca().transAxes, ha='left')
-        plt.text(0.03, 0.13, f'Sell Size: {sell_size:.2f}', transform=plt.gca().transAxes, ha='left')
+        plt.text(0.03, 0.08, f'Buy Size: {millify(buy_size,1)}', transform=plt.gca().transAxes, ha='left')
+        plt.text(0.03, 0.13, f'Sell Size: {millify(sell_size,1)}', transform=plt.gca().transAxes, ha='left')
         plt.text(0.03, 0.18, f'Bid/Ask Ratio: {bid_ask_ratio:.2f}', transform=plt.gca().transAxes, ha='left')
 
         plt.savefig(self.order_book_image)
