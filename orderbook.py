@@ -21,6 +21,8 @@ class OrderBook():
 
     The code from btc_aggregated_orderbook has been improved
     to include price rounding and better plotting features.
+
+    DEPRECATED for AggregatedOrderBook Class using CCXT library
     """
 
     # cached data for 1 minute

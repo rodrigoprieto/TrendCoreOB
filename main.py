@@ -6,7 +6,8 @@ import config
 import trendcore
 import utils
 from UserDatabase import UserDatabase
-import orderbook
+from AggregatedOrderBook import AggregatedOrderBook
+
 
 # Initiate the Database where we're going to persist user's settings
 db = UserDatabase(config.user_data)
@@ -140,7 +141,17 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                                         'Walls farther than this distance will not be displayed.\n'
                                         'Usage Example:\n'
                                         '- /distance 5 : Sets the maximum allowed distance to 5%.\n\n'
-                                        'Remember, to retrieve the order book data, use the /tc command.\n\n'
+                                        'Remember, to retrieve the order book data, use the /tc command.'
+                                        , parse_mode="Markdown")
+        await update.message.reply_text('*Aggregated Order Book for individual symbols*:\n\n'
+                                        'Command: /ob [symbol]\n'
+                                        'Description: This command retrieves a chart image containing aggregated OB '
+                                        'data from Binance, OKX and Bybit spot markets for any specific symbol.\n'
+                                        'Usage Examples:\n'
+                                        '- /ob BTC: Retrieves the Bitcoin Order Book.\n'
+                                        '- /ob ETH: Retrieves the Bitcoin Order Book.\n\n'
+                                        'The order book information is cached for 1 minute. After that time'
+                                        ' we pull new information from exchanges to avoid overloading.\n\n'
                                         'Happy trading!'
                                         , parse_mode="Markdown")
     except error.TelegramError as e:
@@ -177,7 +188,7 @@ async def data(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         print(f"Telegram Error occurred: {e.message}")
 
 
-async def btc_orderbook(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def orderbook(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     try:
         # Send "typing" action while we retrieve the OB data
         await context.bot.send_chat_action(chat_id=update.effective_message.chat_id,
@@ -190,17 +201,38 @@ async def btc_orderbook(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             db_user = db.get_user(user.id)
         # Get the wallsize configured for this user
         wallsize = float(db_user['wallsize'])
+        if len(update.message.text.split()) == 1:
+            # I would assume to use BTC without any other param
+            symbol = "BTC/USDT"
+        else:
+            symbol = update.message.text.split()[1].upper()  # Example: BTC or DOGE or ADA
+            symbol = symbol.replace("USDT", "").replace("USD","")  # Strip the Quote just in case
+            symbol += "/" + "USDT" # Add /USDT to the end
 
         # Retrieve the OB data
-        ob = orderbook.OrderBook(wallsize)
+        exchanges = ['binance', 'okex', 'bybit']
+        order_book = AggregatedOrderBook(exchanges, {}, symbol)
+        try:
+            status = await order_book.get_order_book()
+            if not status:
+                await update.message.reply_text(f"Couldn't retrieve the order book for {symbol}.")
+            await order_book.generate_chart()
+            await order_book.close()
+
+        except Exception as e:
+            print(f"Error to retrieve Order Book data: {str(e)}")
+        finally:
+            await order_book.close()
 
         # Send to the user
-        await update.message.reply_photo(ob.order_book_image, ob.get_caption())
+        caption = order_book.get_caption()
+        if order_book.order_book_image != "":
+            await update.message.reply_photo(order_book.order_book_image, caption)
 
     except error.TelegramError as e:
         print(f"Telegram Error occurred: {e.message}")
     except Exception as e:
-        await update.message.reply_text(f"Error retrieving OB data: {e.message}.\nPlease try again later.",
+        await update.message.reply_text(f"Error retrieving OB data: {e}.\nPlease try again later.",
                                         parse_mode="Markdown")
 
 
@@ -212,7 +244,7 @@ app.add_handler(CommandHandler("help", help))
 app.add_handler(CommandHandler("tc", data))
 app.add_handler(CommandHandler("data", data))  # For compatibility in prev. versions
 # Order Book
-app.add_handler(CommandHandler("btc", btc_orderbook))
+app.add_handler(CommandHandler("ob", orderbook))
 # Configuration
 app.add_handler(CommandHandler("wallsize", wallsize))
 app.add_handler(CommandHandler("distance", distance))

@@ -19,6 +19,4 @@ telegram_bot = ""  # Optional
 # User data
 user_data = join(data_path, 'users_data.db')
 
-# Order book
-order_book_data = join(data_path,'orderbook.csv')
-order_book_image = join(data_path,'orderbook.png')
+
